@@ -5,6 +5,7 @@ from pygame.locals import *
 import math
 from queue import PriorityQueue
 from time import sleep
+import random 
 
 width = 800
 win = pg.display.set_mode((800, 800))
@@ -23,28 +24,28 @@ class Node:
         return self.x, self.y
 
 
-def create_node(pixel_x, pixel_y, ps, gap):
+def create_node(square_x, square_y, square_size, gap):
 
     grid = []
-    for i in range(0, pixel_x*(ps+gap), ps+gap):
+    for i in range(0, square_y*(square_size+gap), square_size+gap):
         grid.append([])
-        for j in range(0, pixel_y*(ps+gap), ps+gap):
+        for j in range(0, square_x*(square_size+gap), square_size+gap):
             node = Node(j, i)
-            grid[i//(ps+gap)].append(node)
+            grid[i//(square_size+gap)].append(node)
             color = (0, 0, 0)
-            pg.draw.rect(win, color, (i, j, ps, ps))
+            pg.draw.rect(win, color, (j, i, square_size, square_size))
 
     pg.display.update()
 
     return grid
 
 
-def update_node(pos, ps, gap, start, end, n_init):
+def update_node(pos, square_size, gap, start, end, n_init):
 
     y, x = pos
 
-    y = y // (ps+gap)
-    x = x // (ps+gap)
+    y = y // (square_size+gap)
+    x = x // (square_size+gap)
 
     if n_init == True:
 
@@ -55,7 +56,7 @@ def update_node(pos, ps, gap, start, end, n_init):
         #     win_x = node.neighbor[i].x
         #     win_y = node.neighbor[i].y
 
-        #     pg.draw.rect(win, (60,120,21), (win_x, win_y, ps, ps))
+        #     pg.draw.rect(win, (60,120,21), (win_x, win_y, square_size, square_size))
         #     pg.display.update()
 
         return start, end
@@ -67,7 +68,7 @@ def update_node(pos, ps, gap, start, end, n_init):
         win_y = grid[x][y].y
         start = grid[x][y]
         color = (255, 0, 0)
-        pg.draw.rect(win, color, (win_x, win_y, ps, ps))
+        pg.draw.rect(win, color, (win_x, win_y, square_size, square_size))
 
     elif end == None and grid[x][y].type != 1:
         grid[x][y].type = 2
@@ -75,28 +76,28 @@ def update_node(pos, ps, gap, start, end, n_init):
         win_y = grid[x][y].y
         end = grid[x][y]
         color = (0, 0, 255)
-        pg.draw.rect(win, color, (win_x, win_y, ps, ps))
+        pg.draw.rect(win, color, (win_x, win_y, square_size, square_size))
 
     elif grid[x][y].type != 1 and grid[x][y].type != 2:
         grid[x][y].type = 3
         win_x = grid[x][y].x
         win_y = grid[x][y].y
         color = (0, 255, 0)
-        pg.draw.rect(win, color, (win_x, win_y, ps, ps))
+        pg.draw.rect(win, color, (win_x, win_y, square_size, square_size))
 
     pg.display.update()
 
     return start, end
 
 
-def update_neighbors(grid, pixel_x, pixel_y, ps, gap):
+def update_neighbors(grid, square_x, square_y, square_size, gap):
 
-    for i in range(pixel_x):
-        for j in range(pixel_y):
+    for i in range(square_y):
+        for j in range(square_x):
 
             grid[i][j].neighbor = []
 
-            if i < (pixel_x - 1) and grid[i+1][j].type != 3:
+            if i < (square_y - 1) and grid[i+1][j].type != 3:
                 grid[i][j].neighbor.append(grid[i+1][j])
 
             if i > 0 and grid[i-1][j].type != 3:
@@ -105,8 +106,26 @@ def update_neighbors(grid, pixel_x, pixel_y, ps, gap):
             if j > 0 and grid[i][j-1].type != 3:
                 grid[i][j].neighbor.append(grid[i][j-1])
 
-            if j < (pixel_y - 1) and grid[i][j+1].type != 3:
+            if j < (square_x - 1) and grid[i][j+1].type != 3:
                 grid[i][j].neighbor.append(grid[i][j+1])
+
+            
+            if j < (square_x - 1) and i > 0 and grid[i-1][j+1].type != 3:
+                grid[i][j].neighbor.append(grid[i-1][j+1])
+
+            if j < (square_x - 1) and i < (square_y - 1) and grid[i+1][j+1].type != 3:
+                grid[i][j].neighbor.append(grid[i+1][j+1])
+            
+            if j > 0 and i > 0 and grid[i-1][j-1].type != 3:
+                grid[i][j].neighbor.append(grid[i-1][j-1])
+            
+            if j > 0 and i < (square_y - 1) and grid[i+1][j-1].type != 3:
+                grid[i][j].neighbor.append(grid[i+1][j-1])
+            
+
+            
+            
+            
 
     print("neighbors added")
 
@@ -119,8 +138,15 @@ def h(p1, p2):
 
     return abs(x1-x2) + abs(y1-y2)
 
+def h2(p1,p2): 
+    x1, y1 = p1
+    x2, y2 = p2
 
-def a_star(start, end, grid, ps):
+    return math.sqrt(abs(x1-x2) + abs(y1-y2))
+    
+
+
+def a_star(start, end, grid, square_size):
 
     tie_break = 0
 
@@ -152,14 +178,14 @@ def a_star(start, end, grid, ps):
             win_x = current_node.x
             win_y = current_node.y
 
-            pg.draw.rect(win, (128, 0, 128), (win_x, win_y, ps, ps))
+            pg.draw.rect(win, (128, 0, 128), (win_x, win_y, square_size, square_size))
             pg.display.update()
 
             # slowed down for visual effect
             sleep(0.03)
 
         if current_node == end:
-            draw_path(shortest_path, end, start, ps)
+            draw_path(shortest_path, end, start, square_size)
             print("arrived at destination")
             break
 
@@ -180,7 +206,7 @@ def a_star(start, end, grid, ps):
                     possible_path_tracker.add(neighbor)
 
 
-def draw_path(shortest_path, current, start, ps):
+def draw_path(shortest_path, current, start, square_size):
 
     while current in shortest_path:
         current = shortest_path[current]
@@ -189,26 +215,26 @@ def draw_path(shortest_path, current, start, ps):
             win_x = current.x
             win_y = current.y
 
-            pg.draw.rect(win, (255, 192, 203), (win_x, win_y, ps, ps))
+            pg.draw.rect(win, (255, 192, 203), (win_x, win_y, square_size, square_size))
             pg.display.update()
             sleep(0.03)
 
 
 if __name__ == '__main__':
 
-    pixel_x = 50
-    pixel_y = 50
-    ps = 10  # pixel size
-    gap = ps//2  # gap between pixels
-    w = pixel_x*(ps+gap)-gap
-    l = pixel_y*(ps+gap)-gap
+    square_x = 70 #total squares in x direction
+    square_y = 50 #total square in y direction
+    square_size = 10  # pixel size
+    gap = square_size//2  # gap between pixels
+    w = square_x*(square_size+gap)-gap 
+    l = square_y*(square_size+gap)-gap
 
-    win = pg.display.set_mode((w, l))
+    win = pg.display.set_mode((w, l)) # screen size
     pg.display.set_caption("Pathfinder")
     run = True
     win.fill((100, 100, 100))
 
-    grid = create_node(pixel_x, pixel_y, ps, gap)
+    grid = create_node(square_x, square_y, square_size, gap)
     start = None
     end = None
     n_init = False
@@ -225,15 +251,15 @@ if __name__ == '__main__':
                     start = None
                     end = None
                     n_init = False
-                    grid = create_node(pixel_x, pixel_y, ps, gap)
+                    grid = create_node(square_x, square_y, square_size, gap)
 
                 if event.key == pg.K_SPACE and start and end:
                     n_init = True
-                    update_neighbors(grid, pixel_x, pixel_y, ps, gap)
-                    a_star(start, end, grid, ps)
+                    update_neighbors(grid, square_x, square_y, square_size, gap)
+                    a_star(start, end, grid, square_size)
 
             if pg.mouse.get_pressed()[0]:  # LEFT mouse click
                 pos = pg.mouse.get_pos()
-                start, end = update_node(pos, ps, gap, start, end, n_init)
+                start, end = update_node(pos, square_size, gap, start, end, n_init)
 
     pg.quit()
